@@ -1,0 +1,52 @@
+//===- main.cpp - The Educational MLIR generator --------------------------===//
+//
+// This file implements the entry point which is mostly based on Toy example,
+// but it is more compact and omits some chapters.
+//
+//===----------------------------------------------------------------------===//
+
+//#include <memory>
+//#include <string>
+//#include <system_error>
+//#include <utility>
+
+#include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/Verifier.h"
+
+//#include "llvm/ADT/StringRef.h"
+//#include "llvm/Support/CommandLine.h"
+//#include "llvm/Support/ErrorOr.h"
+//#include "llvm/Support/raw_ostream.h"
+
+mlir::ModuleOp mlirGen(mlir::MLIRContext &context) {
+  mlir::OpBuilder builder(&context);
+  context.getOrLoadDialect<mlir::scf::SCFDialect>();
+  auto loc = builder.getUnknownLoc();
+
+  auto module = mlir::ModuleOp:create(loc);
+  builder.setInsertionPointToEnd(module.getBody());
+
+  auto mainFuncType = builder.getFunctionType(std::nullopt, builder.getI32Type());
+  auto mainFunc = builder.create<mlir::LLVM::LLVMFuncOp>(loc, "main", mainFuncType);
+  mlir::Block *entryBlock = mainFunc.addEntryBlock();
+
+  auto constOp = builder.create<mlir::LLVM::ConstantOp>(loc, builder.getI32Type(), 0);
+  builder.create<mlir::LLVM::ReturnOp>(loc, constOp->getResult());
+  return module;
+}
+
+int main(int argc, char **argv) {
+  mlir::MLIRContext context;
+  mlir::OwningOpRef<mlir::ModuleOp> module = mlirGen(context);
+  if (!module)
+    return 1;
+
+  if (mlir::failed(mlir::verify(module))) {
+    module.emitError("Module verification failed!")
+    return 2;
+  }
+  module->dump();
+
+  return 0;
+}
