@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(py39_to_MLIR LANGUAGES CXX)
+project(py39compiler LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ statndard to conform to")
+set(CMAKE_C_STANDARD 17 CACHE STRING "C statndard to conform to")
 
 #add_subdirectory(include)
 
@@ -20,7 +21,6 @@ set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/bin)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/lib)
 set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
-include(TableGen) # ???
 include(AddLLVM)
 include(AddMLIR)
 include(HandleLLVMOptions) # LLVM command line options
@@ -38,9 +38,9 @@ set(LIBS
     #MLIRExecutionEngine
     )
 
-add_llvm_executable(py39_to_MLIR main.cpp)
+add_llvm_executable(py39compiler main.cpp)
 
-llvm_update_compile_flags(py39_to_MLIR)
-target_link_libraries(py39_to_MLIR PRIVATE ${LIBS})
+llvm_update_compile_flags(py39compiler)
+target_link_libraries(py39compiler PRIVATE ${LIBS})
 
-mlir_check_all_link_libraries(py39_to_MLIR)
+mlir_check_all_link_libraries(py39compiler)
