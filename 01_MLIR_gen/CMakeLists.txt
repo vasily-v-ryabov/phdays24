@@ -6,11 +6,15 @@ set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ statndard to conform to")
 
 #add_subdirectory(include)
 
+set(LLVM_DIR /usr/lib/llvm-18/lib/cmake/llvm/)
 set(MLIR_DIR /usr/lib/llvm-18/lib/cmake/mlir/)
 
 find_package(MLIR REQUIRED CONFIG)
 message(STATUS "Got MLIRConfig.cmake from: ${MLIR_DIR}")
 message(STATUS "Got LLVMConfig.cmake from: ${LLVM_DIR}")
+
+list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/bin)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/lib)
