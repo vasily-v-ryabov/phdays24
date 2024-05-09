@@ -5,7 +5,7 @@ project(py39compiler LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ statndard to conform to")
 set(CMAKE_C_STANDARD 17 CACHE STRING "C statndard to conform to")
 
-find_package(Python COMPONENTS Development.Embed)
+find_package(Python 3.9 EXACT REQUIRED COMPONENTS Development.Embed)
 
 if(MSVC)
     set(LLVM_DIR "C:\\llvm-project\\build_vs_2022\\lib\\cmake\\llvm")
