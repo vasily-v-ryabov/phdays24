@@ -21,11 +21,13 @@ mlir::ModuleOp mlirGen(mlir::MLIRContext &context) {
   auto module = mlir::ModuleOp::create(loc);
   builder.setInsertionPointToEnd(module.getBody());
 
-  auto mainFuncType = mlir::LLVM::LLVMFunctionType::get(builder.getI32Type(), std::nullopt, false);
+  // create function main()
+  auto mainFuncType = mlir::LLVM::LLVMFunctionType::get(builder.getI32Type(), {});
   auto mainFunc = builder.create<mlir::LLVM::LLVMFuncOp>(loc, "main", mainFuncType);
   mlir::Block *entryBlock = mainFunc.addEntryBlock();
   builder.setInsertionPointToStart(entryBlock);
 
+  // function body
   auto constOp = builder.create<mlir::LLVM::ConstantOp>(loc, builder.getI32Type(), 0);
   builder.create<mlir::LLVM::ReturnOp>(loc, constOp->getResult(0));
   return module;
@@ -42,7 +44,6 @@ int main(int argc, char **argv) {
     module->dump(); // dump incorrect IR anyway
     return 2;
   }
-  module->dump();
-
+  module->dump(); // to stderr
   return 0;
 }
