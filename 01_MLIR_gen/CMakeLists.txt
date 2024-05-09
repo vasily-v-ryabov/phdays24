@@ -7,8 +7,13 @@ set(CMAKE_C_STANDARD 17 CACHE STRING "C statndard to conform to")
 
 #add_subdirectory(include)
 
-set(LLVM_DIR /usr/lib/llvm-18/lib/cmake/llvm/)
-set(MLIR_DIR /usr/lib/llvm-18/lib/cmake/mlir/)
+if(MSVC)
+    set(LLVM_DIR "C:\\llvm-project\\build_vs_2022\\lib\\cmake\\llvm")
+    set(MLIR_DIR "C:\\llvm-project\\build_vs_2022\\lib\\cmake\\mlir")
+else()
+    set(LLVM_DIR /usr/lib/llvm-18/lib/cmake/llvm)
+    set(MLIR_DIR /usr/lib/llvm-18/lib/cmake/mlir)
+endif()
 
 find_package(MLIR REQUIRED CONFIG)
 message(STATUS "Got MLIRConfig.cmake from: ${MLIR_DIR}")
@@ -21,6 +26,7 @@ set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/bin)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/lib)
 set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
+include(TableGen)
 include(AddLLVM)
 include(AddMLIR)
 include(HandleLLVMOptions) # LLVM command line options

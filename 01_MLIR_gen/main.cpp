@@ -5,26 +5,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-//#include <memory>
-//#include <string>
-//#include <system_error>
-//#include <utility>
-
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Verifier.h"
 
-//#include "llvm/ADT/StringRef.h"
-//#include "llvm/Support/CommandLine.h"
-//#include "llvm/Support/ErrorOr.h"
-//#include "llvm/Support/raw_ostream.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+
 
 mlir::ModuleOp mlirGen(mlir::MLIRContext &context) {
   mlir::OpBuilder builder(&context);
+  context.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
   context.getOrLoadDialect<mlir::scf::SCFDialect>();
   auto loc = builder.getUnknownLoc();
 
-  auto module = mlir::ModuleOp:create(loc);
+  auto module = mlir::ModuleOp::create(loc);
   builder.setInsertionPointToEnd(module.getBody());
 
   auto mainFuncType = builder.getFunctionType(std::nullopt, builder.getI32Type());
@@ -32,7 +27,7 @@ mlir::ModuleOp mlirGen(mlir::MLIRContext &context) {
   mlir::Block *entryBlock = mainFunc.addEntryBlock();
 
   auto constOp = builder.create<mlir::LLVM::ConstantOp>(loc, builder.getI32Type(), 0);
-  builder.create<mlir::LLVM::ReturnOp>(loc, constOp->getResult());
+  builder.create<mlir::LLVM::ReturnOp>(loc, constOp->getResult(0));
   return module;
 }
 
@@ -42,8 +37,8 @@ int main(int argc, char **argv) {
   if (!module)
     return 1;
 
-  if (mlir::failed(mlir::verify(module))) {
-    module.emitError("Module verification failed!")
+  if (mlir::failed(mlir::verify(*module))) {
+    module->emitError("Module verification failed!");
     return 2;
   }
   module->dump();
