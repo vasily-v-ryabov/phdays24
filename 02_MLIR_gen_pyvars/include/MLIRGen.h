@@ -33,6 +33,7 @@ public:
   /// Public API: convert the AST for a Python module (source file) to an MLIR
   /// Module operation.
   mlir::LogicalResult mlirGen(mod_ty pyModule) {
+    mlir::LogicalResult genResult = mlir::success();
     auto srcStringAttr = builder.getStringAttr(srcFilename);
     mlir::Location loc = mlir::FileLineColLoc::get(srcStringAttr, 0, 0);
 
@@ -47,9 +48,12 @@ public:
     mlir::Block *entryBlock = mainFunc.addEntryBlock();
     builder.setInsertionPointToEnd(entryBlock);
 
+    // at least one scope is required
+    llvm::ScopedHashTableScope<llvm::StringRef, mlir::Value> scope(symbolTable);
+
     switch (pyModule->kind) {
     case Module_kind:
-      return mlirGen(pyModule->v.Expression.body);
+      genResult = mlirGen(pyModule->v.Module.body);
       break;
     default:
       mlir::emitError(loc, "Not supported pyModule->kind = ")
@@ -61,7 +65,7 @@ public:
     auto constOp =
         builder.create<mlir::LLVM::ConstantOp>(loc, builder.getI32Type(), 0);
     builder.create<mlir::LLVM::ReturnOp>(loc, constOp->getResult(0));
-    return mlir::success();
+    return genResult;
   }
 
   mlir::ModuleOp getModule() const { return module; }
@@ -96,12 +100,15 @@ private:
         mlir::emitError(loc, "Cannot store variable at the right side\n");
         return mlir::failure();
       case Load:
-        return symbolTable.lookup(PyUnicode_AsUTF8(expr->v.Name.id));
+        return symbolTable.lookup(
+            llvm::StringRef(PyUnicode_AsUTF8(expr->v.Name.id)));
       case Del: {
-        llvm::StringRef varName = PyUnicode_AsUTF8(expr->v.Name.id);
+        llvm::StringRef varName =
+            llvm::StringRef(PyUnicode_AsUTF8(expr->v.Name.id));
         if (symbolTable.count(varName)) {
           // insert empty mlir::Value (== nullptr) to mark variable as deleted
-          symbolTable.insert(varName, mlir::Value());
+          llvm::MallocAllocator ma;
+          symbolTable.insert(varName.copy(ma), mlir::Value());
           return mlir::success();
         } else {
           mlir::emitError(loc, "Variable is not defined! Cannot delete it!\n");
@@ -113,7 +120,7 @@ private:
           << expr->v.Name.ctx << "\n";
       return mlir::failure(); // Name_kind
     case Constant_kind: {
-      llvm::StringRef type = PyUnicode_AsUTF8(expr->v.Constant.kind);
+      llvm::StringRef type = expr->v.Constant.value->ob_type->tp_name;
       if (type == "int") {
         mlir::Value value = builder.create<mlir::LLVM::ConstantOp>(
             loc, builder.getI64Type(), 0);
@@ -151,11 +158,14 @@ private:
       }
       switch (astTarget->kind) {
       case Name_kind: {
-        llvm::StringRef varName = PyUnicode_AsUTF8(astTarget->v.Name.id);
+        llvm::StringRef varName =
+            llvm::StringRef(PyUnicode_AsUTF8(astTarget->v.Name.id));
         switch (astTarget->v.Name.ctx) {
-        case Store:
-          symbolTable.insert(varName, rightValue);
+        case Store: {
+          llvm::MallocAllocator ma;
+          symbolTable.insert(varName.copy(ma), rightValue);
           break;
+        }
         case Load:
           auto value = symbolTable.lookup(varName);
           break;
@@ -179,7 +189,9 @@ private:
   mlir::LogicalResult mlirGen(asdl_seq *statements) {
     for (int i = 0; i < asdl_seq_LEN(statements); i++) {
       stmt_ty statement = (stmt_ty)asdl_seq_GET(statements, i);
-      return mlirGen(statement);
+      if (mlir::failed(mlirGen(statement)))
+        return mlir::failure();
     }
+    return mlir::success();
   }
 }; // class MLIRGen
