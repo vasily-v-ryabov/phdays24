@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
 
   if (mlir::failed(mlir::verify(*module))) {
     module->emitError("Module verification failed!");
+    module->dump(); // dump incorrect IR anyway
     return 2;
   }
   module->dump();
