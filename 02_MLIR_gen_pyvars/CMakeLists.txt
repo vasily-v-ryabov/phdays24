@@ -5,6 +5,8 @@ project(py39compiler LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ statndard to conform to")
 set(CMAKE_C_STANDARD 17 CACHE STRING "C statndard to conform to")
 
+find_package(Python COMPONENTS Development.Embed)
+
 if(MSVC)
     set(LLVM_DIR "C:\\llvm-project\\build_vs_2022\\lib\\cmake\\llvm")
     set(MLIR_DIR "C:\\llvm-project\\build_vs_2022\\lib\\cmake\\mlir")
@@ -26,9 +28,11 @@ set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
 include(AddLLVM)
 include(AddMLIR)
+#include(HandleLLVMOptions) # LLVM command line options
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
+include_directories(include)
 
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
@@ -37,11 +41,35 @@ add_definitions(${LLVM_DEFINITIONS})
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS
     ${dialect_libs}
+    #MLIRExecutionEngine
     )
 
-add_llvm_executable(py39compiler main.cpp)
+add_llvm_executable(py39compiler
+    include/py_ast.h
+    main.cpp
+    )
 
 llvm_update_compile_flags(py39compiler)
 target_link_libraries(py39compiler PRIVATE ${LIBS})
+
+target_include_directories(py39compiler PRIVATE ${Python_INCLUDE_DIRS})
+target_link_directories(py39compiler PRIVATE ${Python_LIBRARY_DIRS})
+target_link_libraries(py39compiler PRIVATE ${Python_LIBRARIES})
+message(STATUS "Python_LIBRARIES: ${Python_LIBRARIES}")
+
+if (MSVC)
+    set(Python_DLLs
+        python39.dll
+        python39_d.dll
+        vcruntime140.dll
+        vcruntime140_1.dll
+    )
+    foreach(f ${Python_DLLs})
+        set(src ${Python_ROOT_DIR}/${f})
+        set(dst ${CMAKE_BINARY_DIR}/bin/${f})
+        message(STATUS "Copying file ${f} ...")
+        configure_file(${src} ${dst} COPYONLY)
+    endforeach()
+endif()
 
 mlir_check_all_link_libraries(py39compiler)
