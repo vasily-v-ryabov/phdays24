@@ -22,9 +22,10 @@ mlir::ModuleOp mlirGen(mlir::MLIRContext &context) {
   auto module = mlir::ModuleOp::create(loc);
   builder.setInsertionPointToEnd(module.getBody());
 
-  auto mainFuncType = builder.getFunctionType(std::nullopt, builder.getI32Type());
+  auto mainFuncType = mlir::LLVM::LLVMFunctionType::get(builder.getI32Type(), std::nullopt, false);
   auto mainFunc = builder.create<mlir::LLVM::LLVMFuncOp>(loc, "main", mainFuncType);
   mlir::Block *entryBlock = mainFunc.addEntryBlock();
+  builder.setInsertionPointToStart(entryBlock);
 
   auto constOp = builder.create<mlir::LLVM::ConstantOp>(loc, builder.getI32Type(), 0);
   builder.create<mlir::LLVM::ReturnOp>(loc, constOp->getResult(0));
