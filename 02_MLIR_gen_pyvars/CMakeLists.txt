@@ -46,6 +46,7 @@ set(LIBS
 
 add_llvm_executable(py39compiler
     include/py_ast.h
+    include/MLIRGen.h
     main.cpp
     )
 
