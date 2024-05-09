@@ -6,7 +6,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/Verifier.h"
 
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
