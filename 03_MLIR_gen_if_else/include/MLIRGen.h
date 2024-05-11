@@ -3,13 +3,17 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <set>
+#include <stack>
+
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Diagnostics.h"
+#include "mlir/IR/MLIRContext.h"
 #include "mlir/Support/LogicalResult.h"
 
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 
 #include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/ADT/StringRef.h"
@@ -74,6 +78,9 @@ private:
   /// A Python source file name.
   llvm::StringRef srcFilename;
 
+  llvm::MallocAllocator ma;
+  std::stack<std::set<llvm::StringRef>> ifElseVariables;
+
   /// Helper conversion for a Python AST location to an MLIR location.
   template <typename T>
   mlir::Location location(T loc) {
@@ -83,12 +90,14 @@ private:
   }
 
   void defineVariable(llvm::StringRef name, mlir::Value value) {
-    llvm::outs() << "Add variable '" << name << "' = '" << value << "'\n";
-    llvm::MallocAllocator ma;
+    // llvm::outs() << "Add variable '" << name << "' = '" << value << "'\n";
     symbolTable.insert(name.copy(ma), value);
+    if (!ifElseVariables.empty())
+      ifElseVariables.top().insert(name.copy(ma));
   }
 
-  mlir::FailureOr<mlir::Value> getVariable(mlir::Location loc, llvm::StringRef name) {
+  mlir::FailureOr<mlir::Value> getVariable(mlir::Location loc,
+                                           llvm::StringRef name) {
     auto value = symbolTable.lookup(name);
     if (value) // may be nullptr!
       return value;
@@ -188,6 +197,64 @@ private:
         return mlir::failure();
       }
       return mlir::success();
+    }
+    case If_kind: {
+      mlir::LogicalResult result = mlir::success();
+      auto valueOrError = mlirGen(statement->v.If.test);
+      if (mlir::failed(valueOrError))
+        return mlir::failure();
+      std::set<llvm::StringRef> resultVars;
+      llvm::SmallVector<llvm::StringRef> resultVarsVector;
+      auto condition = valueOrError.value();
+      auto ifOp = builder.create<mlir::scf::IfOp>(
+          loc, condition,
+          /*thenBuilder=*/
+          [&](mlir::OpBuilder &b, mlir::Location loc) {
+            ifElseVariables.push(std::set<llvm::StringRef>());
+
+            result = mlirGen(statement->v.If.body);
+
+            resultVars = ifElseVariables.top();
+            llvm::SmallVector<mlir::Value> returnValues;
+            for (auto it = resultVars.begin(); it != resultVars.end(); it++) {
+              auto value = symbolTable.lookup(*it);
+              if (value) {
+                returnValues.push_back(value);
+                resultVarsVector.push_back(it->copy(ma));
+              }
+            }
+            ifElseVariables.pop();
+            b.create<mlir::scf::YieldOp>(loc, returnValues);
+          },
+          /*elseBuilder=*/
+          [&](mlir::OpBuilder &b, mlir::Location loc) {
+            ifElseVariables.push(std::set<llvm::StringRef>());
+
+            result = mlirGen(statement->v.If.orelse);
+
+            auto elseVars = ifElseVariables.top();
+            if (resultVars != elseVars) {
+              mlir::emitError(loc, "Assigned variables in 'if' region {")
+                  << resultVars << "} are different than in 'else' region {"
+                  << elseVars << "}\n";
+              result = mlir::failure();
+            }
+            llvm::SmallVector<mlir::Value> returnValues;
+            for (auto it = elseVars.begin(); it != elseVars.end(); it++) {
+              auto value = symbolTable.lookup(*it);
+              if (value)
+                returnValues.push_back(value);
+            }
+            ifElseVariables.pop();
+            b.create<mlir::scf::YieldOp>(loc, returnValues);
+          }); // builder.create<mlir::scf::IfOp>
+      if (mlir::failed(result))
+        return mlir::failure();
+      // write returned values to symbol table
+      for (size_t i = 0; i < resultVars.size(); i++) {
+        defineVariable(resultVarsVector[i].copy(ma), ifOp.getResult(i));
+      }
+      return result;
     }
     default:
       mlir::emitError(loc, "Not supported statement->kind: ")
