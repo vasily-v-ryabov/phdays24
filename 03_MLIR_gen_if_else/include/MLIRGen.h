@@ -144,6 +144,11 @@ private:
         mlir::Value value = builder.create<mlir::LLVM::ConstantOp>(
             loc, builder.getF64Type(), floatValue);
         return value;
+      } else if (type == "bool") {
+        long intValue = PyLong_AsLong(expr->v.Constant.value);
+        mlir::Value value = builder.create<mlir::LLVM::ConstantOp>(
+            loc, builder.getI1Type(), (intValue != 0));
+        return value;
       }
       mlir::emitError(loc, "Not support constant type '") << type << "'\n";
       return mlir::failure();
@@ -178,14 +183,13 @@ private:
         switch (astTarget->v.Name.ctx) {
         case Store: {
           defineVariable(varName, rightValue);
-          break;
+          return mlir::success();
         }
-        case Load:
-          mlir::emitError(loc, "Loading variable at the left side of "
-                               "assignment is not expected\n");
+        default:
+          mlir::emitError(loc, "Loading or deleting variable at the left side "
+                               "of assignment is not expected\n");
           return mlir::failure();
         }
-        return mlir::success();
       }
       default:
         mlir::emitError(loc, "Not supported astTarget->kind: ")

@@ -1,3 +1,5 @@
-a = 5
-b = 7
+if True:
+    a = 5
+else:
+    a = 2
 b = a
