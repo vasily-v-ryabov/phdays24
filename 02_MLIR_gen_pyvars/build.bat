@@ -2,6 +2,6 @@
 
 mkdir -p build
 cd build
-cmake -S .. -B . -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Debug -DPython_ROOT_DIR=C:\Python39_x64
+cmake -S .. -B . -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Debug
 cmake --build . --target py39compiler
 cd ..
