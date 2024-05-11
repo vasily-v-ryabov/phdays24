@@ -3,24 +3,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cassert>
-#include <cstdint>
-#include <functional>
-#include <numeric>
-#include <optional>
-#include <vector>
-
-#include "mlir/IR/Block.h"
-#include "mlir/IR/Diagnostics.h"
-#include "mlir/IR/Value.h"
-#include "mlir/Support/LogicalResult.h"
-
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/Diagnostics.h"
+#include "mlir/Support/LogicalResult.h"
+
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 
 #include "llvm/ADT/ScopedHashTable.h"
-#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 
 #include "py_ast.h"
