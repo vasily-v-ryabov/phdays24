@@ -91,6 +91,20 @@ private:
                                      loc->col_offset);
   }
 
+  void defineVariable(llvm::StringRef name, mlir::Value value) {
+    llvm::outs() << "Add variable '" << name << "' = '" << value << "'\n";
+    llvm::MallocAllocator ma;
+    symbolTable.insert(name.copy(ma), value);
+  }
+
+  mlir::FailureOr<mlir::Value> getVariable(mlir::Location loc, llvm::StringRef name) {
+    auto value = symbolTable.lookup(name);
+    if (value) // may be nullptr!
+      return value;
+    mlir::emitError(loc, "Variable '") << name << "' is not defined\n";
+    return mlir::failure();
+  }
+
   mlir::FailureOr<mlir::Value> mlirGen(expr_ty expr) {
     auto loc = location(expr);
     switch (expr->kind) {
@@ -100,15 +114,14 @@ private:
         mlir::emitError(loc, "Cannot store variable at the right side\n");
         return mlir::failure();
       case Load:
-        return symbolTable.lookup(
-            llvm::StringRef(PyUnicode_AsUTF8(expr->v.Name.id)));
+        return getVariable(loc,
+                           llvm::StringRef(PyUnicode_AsUTF8(expr->v.Name.id)));
       case Del: {
         llvm::StringRef varName =
             llvm::StringRef(PyUnicode_AsUTF8(expr->v.Name.id));
         if (symbolTable.count(varName)) {
           // insert empty mlir::Value (== nullptr) to mark variable as deleted
-          llvm::MallocAllocator ma;
-          symbolTable.insert(varName.copy(ma), mlir::Value());
+          defineVariable(varName, mlir::Value());
           return mlir::success();
         } else {
           mlir::emitError(loc, "Variable is not defined! Cannot delete it!\n");
@@ -162,13 +175,13 @@ private:
             llvm::StringRef(PyUnicode_AsUTF8(astTarget->v.Name.id));
         switch (astTarget->v.Name.ctx) {
         case Store: {
-          llvm::MallocAllocator ma;
-          symbolTable.insert(varName.copy(ma), rightValue);
+          defineVariable(varName, rightValue);
           break;
         }
         case Load:
-          auto value = symbolTable.lookup(varName);
-          break;
+          mlir::emitError(loc, "Loading variable at the left side of "
+                               "assignment is not expected\n");
+          return mlir::failure();
         }
         return mlir::success();
       }
