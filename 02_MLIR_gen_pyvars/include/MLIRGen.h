@@ -135,12 +135,14 @@ private:
     case Constant_kind: {
       llvm::StringRef type = expr->v.Constant.value->ob_type->tp_name;
       if (type == "int") {
+        long long intValue = PyLong_AsLongLong(expr->v.Constant.value);
         mlir::Value value = builder.create<mlir::LLVM::ConstantOp>(
-            loc, builder.getI64Type(), 0);
+            loc, builder.getI64Type(), intValue);
         return value;
       } else if (type == "float") {
+        double floatValue = PyFloat_AsDouble(expr->v.Constant.value);
         mlir::Value value = builder.create<mlir::LLVM::ConstantOp>(
-            loc, builder.getF64Type(), 0.0);
+            loc, builder.getF64Type(), floatValue);
         return value;
       }
       mlir::emitError(loc, "Not support constant type '") << type << "'\n";
