@@ -203,7 +203,7 @@ private:
       auto valueOrError = mlirGen(statement->v.If.test);
       if (mlir::failed(valueOrError))
         return mlir::failure();
-      std::set<llvm::StringRef> resultVars;
+      std::set<llvm::StringRef> varsSet;
       llvm::SmallVector<llvm::StringRef> resultVarsVector;
       auto condition = valueOrError.value();
       auto ifOp = builder.create<mlir::scf::IfOp>(
@@ -214,9 +214,9 @@ private:
 
             result = mlirGen(statement->v.If.body);
 
-            resultVars = ifElseVariables.top();
+            varsSet = ifElseVariables.top();
             llvm::SmallVector<mlir::Value> returnValues;
-            for (auto it = resultVars.begin(); it != resultVars.end(); it++) {
+            for (auto it = varsSet.begin(); it != varsSet.end(); it++) {
               auto value = symbolTable.lookup(*it);
               if (value) {
                 returnValues.push_back(value);
@@ -233,9 +233,9 @@ private:
             result = mlirGen(statement->v.If.orelse);
 
             auto elseVars = ifElseVariables.top();
-            if (resultVars != elseVars) {
+            if (varsSet != elseVars) {
               mlir::emitError(loc, "Assigned variables in 'if' region {")
-                  << resultVars << "} are different than in 'else' region {"
+                  << varsSet << "} are different than in 'else' region {"
                   << elseVars << "}\n";
               result = mlir::failure();
             }
@@ -251,7 +251,7 @@ private:
       if (mlir::failed(result))
         return mlir::failure();
       // write returned values to symbol table
-      for (size_t i = 0; i < resultVars.size(); i++) {
+      for (size_t i = 0; i < resultVarsVector.size(); i++) {
         defineVariable(resultVarsVector[i].copy(ma), ifOp.getResult(i));
       }
       return result;

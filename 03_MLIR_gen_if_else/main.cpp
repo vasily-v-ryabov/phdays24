@@ -14,6 +14,8 @@
 
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Pass/PassManager.h"
 
 #include "py_ast.h"
 #include "MLIRGen.h"
@@ -46,6 +48,13 @@ int main(int argc, char **argv) {
     module->dump(); // dump incorrect IR anyway
     return 4;
   }
+
+  mlir::PassManager passes(&context);
+  passes.addPass(mlir::createConvertSCFToCFPass());
+  passes.addPass(mlir::createConvertControlFlowToLLVMPass());
+  if (mlir::failed(passes.run(module.get())))
+    return 5;
+
   module->dump(); // to stderr
   return 0;
 }
