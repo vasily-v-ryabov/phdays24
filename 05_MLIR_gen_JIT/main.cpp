@@ -29,6 +29,12 @@
 #include "llvm/Support/CommandLine.h"
 #include <string>
 
+// for JIT engine
+#include "mlir/ExecutionEngine/ExecutionEngine.h"
+#include "mlir/ExecutionEngine/OptUtils.h"
+#include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
+#include "llvm/Support/TargetSelect.h"
+
 #include "MLIRGen.h"
 #include "py_ast.h"
 
@@ -49,10 +55,19 @@ static cl::opt<enum Action> emitAction(
     cl::values(clEnumValN(DumpLLVMIR, "llvm-ir", "output the LLVM IR dump")),
     cl::values(clEnumValN(RunJIT, "jit", "JIT and run the main function")));
 
+static cl::opt<char>
+    optLevel("O",
+             cl::desc("Optimization level. [-O0, -O1, -O2, or -O3] "
+                      "(default = '-O2')"),
+             cl::Prefix, cl::init('2'));
+
 static cl::opt<std::string> srcPy(cl::Positional, cl::desc("<input .py file>"),
                                   cl::init("-"), cl::value_desc("filename"));
 
 int main(int argc, char **argv) {
+  // default options
+  emitAction.setInitialValue(RunJIT);
+
   cl::ParseCommandLineOptions(argc, argv, "Python 3.9 demo compiler\n");
 
   // parse .py file
@@ -106,6 +121,33 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  llvm::errs() << "Not supported -emit action!\n"; // JIT will be here
-  return 6;
+  // run JIT
+  if (emitAction == Action::RunJIT) {
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+
+    char optChar[2] = {optLevel.getValue(), '\0'};
+    unsigned int level = atoi(optChar);
+    auto optPipeline = mlir::makeOptimizingTransformer(
+        /*optLevel=*/level, /*sizeLevel=*/0,
+        /*targetMachine=*/nullptr);
+
+    mlir::ExecutionEngineOptions engineOptions;
+    engineOptions.transformer = optPipeline;
+    auto maybeEngine = mlir::ExecutionEngine::create(*module, engineOptions);
+    assert(maybeEngine && "failed to construct an execution engine");
+    auto &engine = maybeEngine.get();
+
+    llvm::errs() << "Executing function main() ...\n";
+    auto invocationResult = engine->invokePacked("main");
+    if (invocationResult) {
+      llvm::errs() << "JIT invocation failed\n";
+      return 6;
+    }
+    llvm::errs() << "JIT is finished\n";
+    return 0;
+  }
+
+  llvm::errs() << "Not supported -emit action!\n";
+  return 7;
 }

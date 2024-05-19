@@ -106,6 +106,6 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  llvm::errs() << "Not supported -emit action!\n"; // JIT will be here
+  llvm::errs() << "Not supported -emit action!\n";
   return 6;
 }
