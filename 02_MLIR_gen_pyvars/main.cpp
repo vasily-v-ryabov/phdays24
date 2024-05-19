@@ -5,13 +5,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+// for MLIRContext and OpBuilder with method verify()
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Verifier.h"
 
+// dialects
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 
-#include "py_ast.h"
 #include "MLIRGen.h"
+#include "py_ast.h"
 
 static char *srcFilename = nullptr;
 
@@ -39,6 +41,7 @@ int main(int argc, char **argv) {
     module->dump(); // dump incorrect IR anyway
     return 4;
   }
-  module->dump(); // to stderr
+
+  module->dump(); // dump MLIR to stderr
   return 0;
 }

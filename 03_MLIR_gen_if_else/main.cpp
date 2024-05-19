@@ -5,20 +5,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+// for MLIRContext and OpBuilder with method verify()
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Verifier.h"
 
+// dialects
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 
-#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
-#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
-
-#include "py_ast.h"
 #include "MLIRGen.h"
+#include "py_ast.h"
 
 static char *srcFilename = nullptr;
 
@@ -36,7 +32,6 @@ int main(int argc, char **argv) {
   mlir::MLIRContext context;
   context.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
   context.getOrLoadDialect<mlir::scf::SCFDialect>();
-  context.getOrLoadDialect<mlir::cf::ControlFlowDialect>();
 
   MLIRGen gen(context, srcFilename);
   if (mlir::failed(gen.mlirGen(script.mod())))
@@ -49,12 +44,6 @@ int main(int argc, char **argv) {
     return 4;
   }
 
-  mlir::PassManager passes(&context);
-  passes.addPass(mlir::createConvertSCFToCFPass());
-  passes.addPass(mlir::createConvertControlFlowToLLVMPass());
-  if (mlir::failed(passes.run(module.get())))
-    return 5;
-
-  module->dump(); // to stderr
+  module->dump(); // dump MLIR to stderr
   return 0;
 }

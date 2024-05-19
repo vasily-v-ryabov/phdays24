@@ -28,7 +28,6 @@ set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
 include(AddLLVM)
 include(AddMLIR)
-#include(HandleLLVMOptions) # LLVM command line options
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
@@ -41,7 +40,6 @@ add_definitions(${LLVM_DEFINITIONS})
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS
     ${dialect_libs}
-    #MLIRExecutionEngine
     )
 
 add_llvm_executable(py39compiler

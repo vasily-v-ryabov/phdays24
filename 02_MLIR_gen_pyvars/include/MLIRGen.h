@@ -5,8 +5,8 @@
 
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Diagnostics.h"
+#include "mlir/IR/MLIRContext.h"
 #include "mlir/Support/LogicalResult.h"
 
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -88,7 +88,8 @@ private:
     symbolTable.insert(name.copy(ma), value);
   }
 
-  mlir::FailureOr<mlir::Value> getVariable(mlir::Location loc, llvm::StringRef name) {
+  mlir::FailureOr<mlir::Value> getVariable(mlir::Location loc,
+                                           llvm::StringRef name) {
     auto value = symbolTable.lookup(name);
     if (value) // may be nullptr!
       return value;
