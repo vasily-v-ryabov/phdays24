@@ -35,10 +35,10 @@
 static char *srcFilename = nullptr;
 
 enum Action {
-  DumpMLIR,
-  DumpLLVM,
-  DumpLLVMIR,
-  RunJIT,
+  DumpMLIR,   // -emit=mlir
+  DumpLLVM,   // -emit=llvm
+  DumpLLVMIR, // -emit=llvm-ir
+  RunJIT,     // -emit=jit
 };
 
 namespace cl = llvm::cl;
