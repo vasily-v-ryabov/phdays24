@@ -53,7 +53,8 @@ static cl::opt<enum Action> emitAction(
     cl::values(clEnumValN(DumpMLIR, "mlir", "output the MLIR dump")),
     cl::values(clEnumValN(DumpLLVM, "llvm", "dump the MLIR \"llvm\" dialect")),
     cl::values(clEnumValN(DumpLLVMIR, "llvm-ir", "output the LLVM IR dump")),
-    cl::values(clEnumValN(RunJIT, "jit", "JIT and run the main function")));
+    cl::values(clEnumValN(RunJIT, "jit", "JIT and run the main function")),
+    cl::init(RunJIT));
 
 static cl::opt<char>
     optLevel("O",
@@ -65,9 +66,6 @@ static cl::opt<std::string> srcPy(cl::Positional, cl::desc("<input .py file>"),
                                   cl::init("-"), cl::value_desc("filename"));
 
 int main(int argc, char **argv) {
-  // default options
-  emitAction.setInitialValue(RunJIT);
-
   cl::ParseCommandLineOptions(argc, argv, "Python 3.9 demo compiler\n");
 
   // parse .py file
@@ -138,14 +136,16 @@ int main(int argc, char **argv) {
     assert(maybeEngine && "failed to construct an execution engine");
     auto &engine = maybeEngine.get();
 
-    llvm::errs() << "Executing function main() ...\n";
-    auto invocationResult = engine->invokePacked("main");
+    llvm::SmallVector<void *> argsAndReturn;
+    int32_t exitCode;
+    argsAndReturn.push_back(&exitCode); // address for return value
+    auto invocationResult = engine->invokePacked("main", argsAndReturn);
     if (invocationResult) {
       llvm::errs() << "JIT invocation failed\n";
       return 6;
     }
-    llvm::errs() << "JIT is finished\n";
-    return 0;
+    llvm::errs() << "JIT is finished. Exit code: " << exitCode << "\n";
+    return exitCode;
   }
 
   llvm::errs() << "Not supported -emit action!\n";
