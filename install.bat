@@ -7,16 +7,16 @@ if not exist "%PY39_SETUP_DIR%" (
 pip install cmake
 
 :: XXX: LLVM installer doesn't contains MLIR libraries
-::powershell -Command "Invoke-WebRequest https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.5/LLVM-18.1.5-win64.exe -OutFile LLVM-18.1.5-win64.exe"
-::call LLVM-18.1.5-win64.exe /AllUsers /S /NCRC /D=C:\LLVM-18
+::powershell -Command "Invoke-WebRequest https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.0/LLVM-19.1.0-win64.exe -OutFile LLVM-19.1.0-win64.exe"
+::call LLVM-19.1.0-win64.exe /AllUsers /S /NCRC /D=C:\LLVM-19
 
 :: set up Visual Studio build environment
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 
-:: clone LLVM repository (tag "llvmorg-18.1.5")
+:: clone LLVM repository (tag "llvmorg-19.1.1")
 set CLONE_DIR=C:\llvm-project
 if not exist "%CLONE_DIR%" (
-    git clone https://github.com/llvm/llvm-project.git --depth=1 -b llvmorg-18.1.5 %CLONE_DIR%
+    git clone https://github.com/llvm/llvm-project.git --depth=1 -b llvmorg-19.1.1 %CLONE_DIR%
 )
 cd /d %CLONE_DIR%
 mkdir build

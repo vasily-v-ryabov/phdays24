@@ -11,8 +11,8 @@ if(MSVC)
     set(LLVM_DIR "C:\\llvm-project\\build_vs_2022\\lib\\cmake\\llvm")
     set(MLIR_DIR "C:\\llvm-project\\build_vs_2022\\lib\\cmake\\mlir")
 else()
-    set(LLVM_DIR /usr/lib/llvm-18/lib/cmake/llvm)
-    set(MLIR_DIR /usr/lib/llvm-18/lib/cmake/mlir)
+    set(LLVM_DIR /usr/lib/llvm-19/lib/cmake/llvm)
+    set(MLIR_DIR /usr/lib/llvm-19/lib/cmake/mlir)
 endif()
 
 find_package(MLIR REQUIRED CONFIG)
@@ -41,6 +41,7 @@ add_definitions(${LLVM_DEFINITIONS})
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS
     ${dialect_libs}
+    MLIRToLLVMIRTranslationRegistration
     MLIRExecutionEngine
     )
 

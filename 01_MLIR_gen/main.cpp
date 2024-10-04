@@ -22,7 +22,7 @@ mlir::ModuleOp mlirGen(mlir::MLIRContext &context) {
   // create function main()
   auto mainFuncType = mlir::LLVM::LLVMFunctionType::get(builder.getI32Type(), {});
   auto mainFunc = builder.create<mlir::LLVM::LLVMFuncOp>(loc, "main", mainFuncType);
-  mlir::Block *entryBlock = mainFunc.addEntryBlock();
+  mlir::Block *entryBlock = mainFunc.addEntryBlock(builder);
   builder.setInsertionPointToStart(entryBlock);
 
   // function body
